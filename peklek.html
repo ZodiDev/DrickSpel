@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peka på någon 👉🍻</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+
+        .container {
+            max-width: 400px;
+            width: 90%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .title {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .question-card {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            min-height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .question-text {
+            font-size: 1.3rem;
+            line-height: 1.4;
+            font-weight: 500;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .highlight {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: white;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .start-btn {
+            font-size: 1.2rem;
+            padding: 18px 40px;
+            background: linear-gradient(45deg, #2ecc71, #27ae60);
+        }
+
+        .instructions {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .emoji {
+            font-size: 2rem;
+            margin: 0 10px;
+        }
+
+        .game-screen {
+            display: none;
+        }
+
+        .party-mode {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .footer {
+            margin-top: 20px;
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+                margin: 20px;
+            }
+            
+            .title {
+                font-size: 2rem;
+            }
+            
+            .question-text {
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Start Screen -->
+        <div id="startScreen">
+            <h1 class="title">👉 Peka på någon 🍻</h1>
+            <p class="subtitle">Det ultimata drickspelet för festen!</p>
+            
+            <div class="instructions">
+                <h3>🎮 Hur det fungerar:</h3>
+                <p>1. Läs frågan högt</p>
+                <p>2. Alla pekar på personen som passar bäst</p>
+                <p>3. Den som får flest fingrar dricker!</p>
+                <p>4. Tryck för nästa fråga</p>
+            </div>
+            
+            <button class="btn start-btn" onclick="startGame()">
+                🚀 Starta spelet
+            </button>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen" class="game-screen">
+            <div class="question-card party-mode" id="questionCard">
+                <div class="question-text" id="questionText">
+                    Klicka för att få en fråga!
+                </div>
+            </div>
+            
+            <button class="btn" onclick="nextQuestion()">
+                ⚡ Nästa fråga
+            </button>
+            
+            <button class="btn" onclick="backToStart()" style="background: linear-gradient(45deg, #95a5a6, #7f8c8d); margin-top: 10px;">
+                🏠 Tillbaka
+            </button>
+        </div>
+
+        <div class="footer">
+            <p>🎉 Ha kul och drick ansvarsfullt! 🎉</p>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            // Party & Festfrågor
+            "Peka på någon som sannolikt skulle överleva längst i en zombie-apokalips",
+            "Peka på någon som skulle vara bäst på att laga mat efter att ha druckit",
+            "Peka på någon som skulle vara den första att somna på en fest",
+            "Peka på någon som sannolikt har flest hemliga talanger",
+            "Peka på någon som skulle vara bäst på att förhandla sig ur problem",
+            "Peka på någon som skulle vara den roligaste att gå på semester med",
+            "Peka på någon som skulle vara bäst på att få en tråkig fest att bli rolig",
+            "Peka på någon som skulle vara den första att börja dansa på bordet",
+            "Peka på någon som sannolikt har druckit ur toaletten som barn",
+            "Peka på någon som skulle vara bäst på att smuggla in alkohol på festival",
+            "Peka på någon som skulle vara den första att kräkas på festen",
+            "Peka på någon som sannolikt har varit på flest studentfester",
+            "Peka på någon som skulle vara bäst på att övertala bouncer att släppa in er",
+            "Peka på någon som sannolikt har träffat flest kändisar",
+            "Peka på någon som skulle vara den första att föreslå att streaka",
+            
+            // Vild överlevnad & Äventyr
+            "Peka på någon som skulle klara sig bäst i vildmarken",
+            "Peka på någon som sannolikt skulle bli den första att dö i Hunger Games",
+            "Peka på någon som skulle vara bäst på att bygga ett fort av kuddar",
+            "Peka på någon som skulle vara den första att hoppa i en kall sjö",
+            "Peka på någon som sannolikt har ätit flest konstiga saker",
+            "Peka på någon som skulle vara bäst på att hitta vägen hem utan GPS",
+            "Peka på någon som sannolikt hade blivit pirat om de levt för 300 år sedan",
+            "Peka på någon som skulle vara den första att klättra över ett staket",
+            "Peka på någon som sannolikt har stulit flest saker (även småsaker)",
+            "Peka på någon som skulle vara bäst på att rymma från fängelse",
+            
+            // Hemliga & Pinsamma saker
+            "Peka på någon som sannolikt har mest random saker i sin väska/fickor",
+            "Peka på någon som sannolikt har flest pinsamma barndomsminnen",
+            "Peka på någon som sannolikt pratar mest med sina husdjur/växter",
+            "Peka på någon som sannolikt kollar sitt ex på sociala medier ibland",
+            "Peka på någon som sannolikt har flest inne-skämt med sig själv",
+            "Peka på någon som sannolikt har lyssnat på Babblarna som vuxen",
+            "Peka på någon som sannolikt har haft flest imaginary friends som barn",
+            "Peka på någon som sannolikt har ätit hundmat av nyfikenhet",
+            "Peka på någon som sannolikt har pratat med sig själv i spegeln senast",
+            "Peka på någon som sannolikt har falskat sin ålder för att komma in någonstans",
+            "Peka på någon som sannolikt har ljugit mest om sin längd på Tinder",
+            "Peka på någon som sannolikt har haft flest konstiga faser i tonåren",
+            "Peka på någon som sannolikt har grått mest under filmer",
+            "Peka på någon som sannolikt har ätit snask i hemlighet mest",
+            
+            // Kreativitet & Talanger
+            "Peka på någon som skulle vara bäst på att improvisera en sång",
+            "Peka på någon som skulle vara bäst på att vinna en rolig danstävling",
+            "Peka på någon som sannolikt sjunger mest i duschen",
+            "Peka på någon som skulle vara bäst på att hitta på ursäkter",
+            "Peka på någon som sannolikt drömmer mest kreativt",
+            "Peka på någon som skulle vara den första att skratta åt sitt eget skämt",
+            "Peka på någon som skulle vara bäst på att imitera andra personer",
+            "Peka på någon som sannolikt är bäst på att rita snoppar på saker",
+            "Peka på någon som skulle vara bäst på att göra roliga ljud med sin kropp",
+            "Peka på någon som sannolikt kan flest repliker från filmer utantill",
+            "Peka på någon som skulle vara bäst på att göra konstiga ansikten",
+            "Peka på någon som sannolikt har gjort flest konstiga TikTok-danser",
+            
+            // Kärlek & Romantik
+            "Peka på någon som skulle vara den första att erkänna att de är kära",
+            "Peka på någon som sannolikt har flest hemliga crushes",
+            "Peka på någon som skulle vara bäst på att flirta subtilt",
+            "Peka på någon som skulle vara den första att säga 'jag älskar dig' i ett förhållande",
+            "Peka på någon som sannolikt blir mest generad av komplimanger",
+            "Peka på någon som skulle vara bäst på att ge någon fjärilar i magen",
+            "Peka på någon som skulle vara den första att bli röd om någon flirtade med dem",
+            "Peka på någon som skulle vara bäst på att skriva kärleksbrev",
+            "Peka på någon som sannolikt blir mest nervös inför en första dejt",
+            "Peka på någon som sannolikt har haft flest one-night stands",
+            "Peka på någon som sannolikt har masturberat flest gånger denna vecka",
+            "Peka på någon som skulle vara bäst i sängen",
+            "Peka på någon som sannolikt har haft sex på flest konstiga ställen",
+            "Peka på någon som sannolikt har skickat nakenbilder till fel person",
+            "Peka på någon som sannolikt har haft sex med någons ex i denna grupp",
+            "Peka på någon som sannolikt fantiserar mest om personer i denna grupp",
+            "Peka på någon som sannolikt har haft flest våta drömmar",
+            "Peka på någon som skulle vara den första att föreslå trekant",
+            
+            // Personlighet & Beteende
+            "Peka på någon som sannolikt tänker mest på vad andra tycker",
+            "Peka på någon som skulle vara den första att erkänna när de har fel",
+            "Peka på någon som skulle vara den första att hjälpa en främling",
+            "Peka på någon som skulle vara bäst på att lugna ner en arg kund",
+            "Peka på någon som skulle vara bäst på att få folk att skratta när de är ledsna",
+            "Peka på någon som sannolikt blir mest nostalgisk av gamla låtar",
+            "Peka på någon som skulle vara bäst på att planera en överraskningsfest",
+            "Peka på någon som sannolikt äter godis till frukost ibland",
+            "Peka på någon som sannolikt har sett flest avsnitt av samma TV-serie",
+            "Peka på någon som sannolikt har coolast smeknamn från vännerna",
+            "Peka på någon som skulle vara bäst på att ljuga för sina föräldrar",
+            "Peka på någon som sannolikt har fuskat mest på prov",
+            "Peka på någon som skulle vara den första att erkänna att de är oskuld",
+            "Peka på någon som sannolikt har varit otrogen flest gånger",
+            "Peka på någon som sannolikt har haft flest sugardaddies/sugarmammas",
+            
+            // Tokiga & Extrema scenarios
+            "Peka på någon som skulle vara den första att prova droger på en festival",
+            "Peka på någon som sannolikt har haft sex på en offentlig plats",
+            "Peka på någon som skulle vara bäst på att sälja sin kropp om de var tvungna",
+            "Peka på någon som sannolikt har druckit mest alkohol i sitt liv totalt",
+            "Peka på någon som skulle vara den första att kissa på sig av skratt",
+            "Peka på någon som sannolikt har varit närmast att dö av dumhet",
+            "Peka på någon som skulle vara bäst på att vara stripper för en dag",
+            "Peka på någon som sannolikt har haft flest konstiga sexuella upplevelser",
+            "Peka på någon som skulle vara den första att börja en orgiebulle",
+            "Peka på någon som sannolikt har tittat på porr med någon i denna grupp",
+            
+            // Framtid & Hypotetiska situationer
+            "Peka på någon som sannolikt hade blivit känd om de varit födda på 1800-talet",
+            "Peka på någon som skulle vara bäst på att starta en kult",
+            "Peka på någon som sannolikt kommer att gifta sig först",
+            "Peka på någon som sannolikt kommer att skaffa barn först",
+            "Peka på någon som skulle vara bäst på att vara spion",
+            "Peka på någon som sannolikt kommer att bli rikast",
+            "Peka på någon som skulle vara bäst på att överleva en naturkatastrof",
+            "Peka på någon som sannolikt kommer att ha flest barn",
+            "Peka på någon som skulle vara den första att flytta utomlands",
+            "Peka på någon som sannolikt kommer att bli mest känd",
+            "Peka på någon som skulle vara bäst på att vara politiker",
+            "Peka på någon som sannolikt kommer att skiljas först",
+            
+            // Barnsliga & Nostalgiska
+            "Peka på någon som sannolikt har ätit mest lera/sand som barn",
+            "Peka på någon som skulle vara bäst på att bygga sandslott",
+            "Peka på någon som sannolikt har varit i flest slagsmål som barn",
+            "Peka på någon som skulle vara den första att gråta på Bambi",
+            "Peka på någon som sannolikt har tappat flest mjölktänder på konstiga sätt",
+            "Peka på någon som skulle vara bäst på att komma ihåg barnramsor",
+            "Peka på någon som sannolikt har bajsat på sig senast som vuxen",
+            "Peka på någon som skulle vara den första att äta från golvet enligt 5-sekundersregeln",
+            
+            // Sociala medier & Modern tid
+            "Peka på någon som sannolikt har flest oanvända appar på telefonen",
+            "Peka på någon som skulle vara bäst på att bli viral på TikTok",
+            "Peka på någon som sannolikt har blockerat flest personer på sociala medier",
+            "Peka på någon som skulle vara den första att bli catfishad",
+            "Peka på någon som sannolikt har skickat nakenbilder till flest personer",
+            "Peka på någon som skulle vara bäst på att ljuga på sin Tinder-profil",
+            "Peka på någon som sannolikt har flest följare på Instagram",
+            "Peka på någon som skulle vara den första att betala för OnlyFans",
+            
+            // Mat & Dryck
+            "Peka på någon som skulle vara den första att prova en konstig maträtt",
+            "Peka på någon som sannolikt har ätit mat som ramlat på golvet senast",
+            "Peka på någon som skulle vara bäst på att äta extremt stark mat",
+            "Peka på någon som sannolikt har druckit mest mjölk direkt från förpackningen",
+            "Peka på någon som skulle vara den första att äta insekter",
+            "Peka på någon som sannolikt har ätit mest McDonalds i sitt liv",
+            "Peka på någon som skulle vara bäst på att vinna en ätetävling",
+            "Peka på någon som sannolikt har smakat flest konstiga matkombinatationer",
+            
+            // Extrema & Vågade
+            "Peka på någon som skulle vara den första att föreslå att leka sanning eller konsekvens",
+            "Peka på någon som sannolikt har haft sex under föräldrarnas tak senast",
+            "Peka på någon som skulle vara bäst på att vara escort för en dag",
+            "Peka på någon som sannolikt har tittat på mest porr denna månad",
+            "Peka på någon som skulle vara den första att delta i en swingers-fest",
+            "Peka på någon som sannolikt har experimenterat mest sexuellt",
+            "Peka på någon som skulle vara bäst på att sälja sexleksaker",
+            "Peka på någon som sannolikt har haft flest sexpartners",
+            "Peka på någon som skulle vara den första att ha sex i denna grupp ikväll",
+            "Peka på någon som sannolikt har den största snoppen/bästa brösten",
+            "Peka på någon som skulle vara bäst på att vara pornstjärna",
+            "Peka på någon som sannolikt har fakeat orgasm flest gånger",
+            "Peka på någon som skulle vara den första att föreslå gruppex",
+            "Peka på någon som sannolikt har haft sex med flest personer över 40",
+            "Peka på någon som skulle vara bäst på att göra en stripshow",
+            
+            // Slumpmässiga & Udda
+            "Peka på någon som sannolikt har flest ovanliga foton på sin telefon",
+            "Peka på någon som skulle vara bäst på att vara clown för en dag",
+            "Peka på någon som sannolikt har haft flest konstiga drömmar",
+            "Peka på någon som skulle vara den första att prata med aliens",
+            "Peka på någon som sannolikt har grävt i näsan mest denna vecka",
+            "Peka på någon som skulle vara bäst på att sälja saker på blocket",
+            "Peka på någon som sannolikt har kollat på flest YouTube-videor idag",
+            "Peka på någon som skulle vara den första att få panik på en konsert",
+            "Peka på någon som sannolikt har den smutsigaste fantasin",
+            "Peka på någon som skulle vara bäst på att vara kriminell",
+            "Peka på någon som sannolikt har ljugit mest för polisen",
+            "Peka på någon som skulle vara den första att kasta upp av nervositet",
+            "Peka på någon som sannolikt har målat naglarna flest färger",
+            "Peka på någon som skulle vara bäst på att vara hemlig agent",
+            "Peka på någon som sannolikt har druckit vatten ur kranor på flest länder"
+        ];
+
+        let currentQuestions = [...questions];
+        let usedQuestions = [];
+
+        function startGame() {
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'block';
+            nextQuestion();
+        }
+
+        function nextQuestion() {
+            // Om alla frågor är använda, återställ listan
+            if (currentQuestions.length === 0) {
+                currentQuestions = [...usedQuestions];
+                usedQuestions = [];
+            }
+
+            // Välj en slumpmässig fråga
+            const randomIndex = Math.floor(Math.random() * currentQuestions.length);
+            const question = currentQuestions[randomIndex];
+            
+            // Ta bort frågan från tillgängliga och lägg till i använda
+            currentQuestions.splice(randomIndex, 1);
+            usedQuestions.push(question);
+            
+            // Visa frågan
+            document.getElementById('questionText').innerHTML = question;
+            
+            // Lägg till animation
+            const card = document.getElementById('questionCard');
+            card.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                card.style.transform = 'scale(1)';
+            }, 100);
+        }
+
+        function backToStart() {
+            document.getElementById('gameScreen').style.display = 'none';
+            document.getElementById('startScreen').style.display = 'block';
+            // Återställ frågorna
+            currentQuestions = [...questions];
+            usedQuestions = [];
+        }
+
+        // Lägg till touch-support för mobiler
+        document.addEventListener('touchstart', function() {}, {passive: true});
+    </script>
+</body>
+</html>
