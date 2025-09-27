@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Connect Four</title>
+  <style>
+    :root{
+      --cols: 7;
+      --rows: 6;
+      --board-color: #1e3a8a; /* deep blue */
+      --board-edge: #0b1f55;
+      --bg: #0b1020;
+      --text: #f3f4f6;
+      --red: #ef4444;
+      --blue: #3b82f6;
+      --win: #22c55e;
+      --shadow: 0 10px 30px rgba(0,0,0,.4);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background: radial-gradient(1200px 800px at 20% -10%, #1b2345 0%, #0b1020 60%) no-repeat,
+                  radial-gradient(800px 800px at 120% 120%, #121932 0%, #0b1020 60%);
+      color:var(--text);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial;
+      padding: clamp(10px, 2.5vw, 24px);
+    }
+
+    .app{
+      width:min(96vw, 560px);
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:12px 14px;
+      background: rgba(255,255,255,.06);
+      backdrop-filter: blur(8px);
+      border-radius:16px;
+      box-shadow: var(--shadow);
+    }
+    .brand{
+      font-weight:800;
+      letter-spacing:.5px;
+    }
+    .status{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-weight:700;
+    }
+    .pill{
+      width:20px; height:20px; border-radius:50%;
+      box-shadow: inset 0 2px 6px rgba(255,255,255,.35), inset 0 -2px 6px rgba(0,0,0,.35), 0 0 0 2px rgba(255,255,255,.08);
+    }
+    .red{ background: radial-gradient(circle at 30% 30%, #ff8080, var(--red)); }
+    .blue{ background: radial-gradient(circle at 30% 30%, #8fb9ff, var(--blue)); }
+
+    button{
+      appearance:none; border:0; cursor:pointer;
+      padding:10px 14px; border-radius:12px; font-weight:700; color:#0b1020;
+      background:#e5e7eb; box-shadow: var(--shadow);
+      transition: transform .06s ease;
+    }
+    button:active{ transform: scale(.98); }
+
+    .board-wrap{
+      position:relative;
+      width:100%;
+      aspect-ratio: 7 / 6;
+      margin-inline:auto;
+      user-select:none;
+      touch-action:manipulation;
+    }
+
+    /* discs layer sits behind the board mask */
+    .disc-layer{
+      position:absolute; inset:0; overflow:visible;
+      pointer-events:none; /* clicks handled by wrapper */
+    }
+
+    .disc{
+      position:absolute;
+      width: var(--disc);
+      height: var(--disc);
+      border-radius:50%;
+      box-shadow:
+        inset 0 10px 18px rgba(255,255,255,.35),
+        inset 0 -10px 18px rgba(0,0,0,.35),
+        0 2px 10px rgba(0,0,0,.35);
+      will-change: transform;
+      transform: translateY(-120%);
+      transition: transform var(--drop-ms, 420ms) cubic-bezier(.18,.64,.27,1);
+    }
+    .disc.ghost{ opacity:.35; filter:saturate(.9) brightness(1.1); box-shadow:none }
+
+    .disc.win{
+      outline: 6px solid rgba(255,255,255,.7);
+      box-shadow: 0 0 0 6px rgba(34,197,94,.35), 0 14px 28px rgba(0,0,0,.45);
+      animation: glow 900ms ease-in-out infinite alternate;
+    }
+    @keyframes glow{ from{ filter: drop-shadow(0 0 0 rgba(34,197,94,.0)); } to{ filter: drop-shadow(0 0 16px rgba(34,197,94,.85)); } }
+
+    /* svg board overlay with real holes */
+    .board-mask{
+      position:absolute; inset:0;
+      display:block; width:100%; height:100%;
+      pointer-events:none; /* let taps pass through */
+      filter: drop-shadow(0 16px 28px rgba(0,0,0,.55));
+    }
+
+    .banner{
+      position:absolute; inset:auto 0 8% 0; margin:auto; width:fit-content;
+      padding:10px 16px; border-radius:14px; background: rgba(255,255,255,.08);
+      backdrop-filter: blur(8px);
+      font-weight:900; letter-spacing:.4px; text-align:center;
+      left:50%; transform:translateX(-50%);
+      box-shadow: var(--shadow);
+      display:none;
+    }
+
+    .shake{ animation: shake .4s ease; }
+    @keyframes shake{
+      0%{ transform: translateX(0) }
+      25%{ transform: translateX(-10px) }
+      50%{ transform: translateX(10px) }
+      75%{ transform: translateX(-6px) }
+      100%{ transform: translateX(0) }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="brand">Connect Four</div>
+      <div class="status">
+        <div class="pill red" id="turnDot"></div>
+        <div id="turnText">Red turn</div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button id="restartBtn" title="Restart">Restart</button>
+      </div>
+    </div>
+
+    <div class="board-wrap" id="boardWrap" aria-label="Connect Four Board" role="application">
+      <div class="disc-layer" id="discLayer"></div>
+      <!-- svg overlay created in script to match exact size -->
+      <svg class="board-mask" id="boardMask" viewBox="0 0 700 600" preserveAspectRatio="none" aria-hidden="true"></svg>
+      <div class="banner" id="banner"></div>
+    </div>
+
+    <p style="opacity:.8; text-align:center; margin:2px 6px 0; font-size:13px">Tap a column to drop a disc. Two players share the phone and take turns.</p>
+  </div>
+
+<script>
+(() => {
+  const COLS = 7, ROWS = 6;
+  const boardWrap = document.getElementById('boardWrap');
+  const discLayer = document.getElementById('discLayer');
+  const boardMask = document.getElementById('boardMask');
+  const turnText = document.getElementById('turnText');
+  const turnDot = document.getElementById('turnDot');
+  const restartBtn = document.getElementById('restartBtn');
+  const banner = document.getElementById('banner');
+
+  let grid, current, busy, gameOver;
+  let cell = 0, W = 0, H = 0, discSize = 0, dropBaseMs = 90; // drop time per row in ms
+  let ghost = null;
+
+  function freshGrid(){
+    grid = Array.from({length: ROWS}, () => Array(COLS).fill(0));
+  }
+
+  function setTurnUI(){
+    turnText.textContent = current === 1 ? 'Red turn' : 'Blue turn';
+    turnDot.className = 'pill ' + (current === 1 ? 'red' : 'blue');
+  }
+
+  function init(){
+    busy = false; gameOver = false; current = 1; banner.style.display='none';
+    discLayer.innerHTML = '';
+    freshGrid();
+    sizeBoard();
+    setTurnUI();
+  }
+
+  function sizeBoard(){
+    const rect = boardWrap.getBoundingClientRect();
+    W = Math.round(rect.width);
+    cell = Math.floor(W / COLS);
+    W = cell * COLS;
+    H = cell * ROWS;
+    boardWrap.style.height = H + 'px';
+
+    discSize = Math.round(cell * 0.78);
+    discLayer.style.setProperty('--disc', discSize + 'px');
+
+    // update existing discs positions to new layout
+    [...discLayer.children].forEach(el => {
+      if(!el.classList.contains('disc')) return;
+      const c = +el.dataset.c, r = +el.dataset.r;
+      positionDisc(el, c, r, false);
+      // lock them to final spot
+      el.style.transition = 'none';
+      el.style.transform = `translateY(${+el.dataset.r*cell + (cell - discSize)/2}px)`;
+      el.offsetHeight; // reflow
+      el.style.removeProperty('transition');
+    });
+
+    // rebuild svg mask to match new size
+    buildMaskSVG();
+  }
+
+  function buildMaskSVG(){
+    const holeR = cell * 0.36; // hole radius
+    const pad = cell * 0.07;   // side padding
+
+    boardMask.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    boardMask.innerHTML = '';
+
+    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+    const mask = document.createElementNS('http://www.w3.org/2000/svg', 'mask');
+    mask.setAttribute('id', 'holes');
+
+    // start with full white rect to show board, then punch black circles as holes
+    const whiteRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    whiteRect.setAttribute('x', '0');
+    whiteRect.setAttribute('y', '0');
+    whiteRect.setAttribute('width', W);
+    whiteRect.setAttribute('height', H);
+    whiteRect.setAttribute('fill', 'white');
+    whiteRect.setAttribute('rx', Math.max(16, cell*0.18));
+    whiteRect.setAttribute('ry', Math.max(16, cell*0.18));
+    mask.appendChild(whiteRect);
+
+    for(let r=0;r<ROWS;r++){
+      for(let c=0;c<COLS;c++){
+        const cx = c*cell + cell*0.5;
+        const cy = r*cell + cell*0.5;
+        const hole = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        hole.setAttribute('cx', cx);
+        hole.setAttribute('cy', cy);
+        hole.setAttribute('r', holeR);
+        hole.setAttribute('fill', 'black'); // black hides from mask to form see through hole
+        mask.appendChild(hole);
+      }
+    }
+    defs.appendChild(mask);
+
+    const plate = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    plate.setAttribute('x', 0);
+    plate.setAttribute('y', 0);
+    plate.setAttribute('width', W);
+    plate.setAttribute('height', H);
+    plate.setAttribute('rx', Math.max(16, cell*0.18));
+    plate.setAttribute('ry', Math.max(16, cell*0.18));
+    plate.setAttribute('fill', getComputedStyle(document.documentElement).getPropertyValue('--board-color').trim() || '#1e3a8a');
+    plate.setAttribute('mask', 'url(#holes)');
+    plate.setAttribute('stroke', getComputedStyle(document.documentElement).getPropertyValue('--board-edge').trim() || '#0b1f55');
+    plate.setAttribute('stroke-width', Math.max(6, cell*0.09));
+
+    // subtle inner shadow
+    const inner = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    for(let r=0;r<ROWS;r++){
+      for(let c=0;c<COLS;c++){
+        const cx = c*cell + cell*0.5;
+        const cy = r*cell + cell*0.5;
+        const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        ring.setAttribute('cx', cx);
+        ring.setAttribute('cy', cy);
+        ring.setAttribute('r', holeR*1.04);
+        ring.setAttribute('fill', 'none');
+        ring.setAttribute('stroke', 'rgba(0,0,0,.35)');
+        ring.setAttribute('stroke-width', Math.max(2, cell*0.035));
+        inner.appendChild(ring);
+      }
+    }
+
+    boardMask.appendChild(defs);
+    boardMask.appendChild(plate);
+    boardMask.appendChild(inner);
+  }
+
+  function positionDisc(el, c, r, center=true){
+    const left = Math.round(c*cell + (cell - discSize)/2);
+    const top = Math.round(r*cell + (cell - discSize)/2);
+    el.style.left = left + 'px';
+    el.dataset.c = c; el.dataset.r = r;
+    if(center){ el.style.transform = `translateY(${top}px)`; }
+  }
+
+  function colFromEvent(e){
+    const rect = boardWrap.getBoundingClientRect();
+    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    let c = Math.floor(x / cell);
+    return Math.max(0, Math.min(COLS-1, c));
+  }
+
+  function firstEmptyRow(col){
+    for(let r=ROWS-1; r>=0; r--){ if(grid[r][col] === 0) return r; }
+    return -1;
+  }
+
+  function setBanner(text){
+    banner.textContent = text;
+    banner.style.display = 'block';
+  }
+
+  function handleTap(col){
+    if(busy || gameOver) return;
+    const row = firstEmptyRow(col);
+    if(row < 0){
+      boardWrap.classList.remove('shake');
+      void boardWrap.offsetWidth; // restart anim
+      boardWrap.classList.add('shake');
+      return;
+    }
+    busy = true;
+
+    // create disc
+    const disc = document.createElement('div');
+    disc.className = 'disc ' + (current === 1 ? 'red' : 'blue');
+    disc.style.setProperty('--drop-ms', Math.max(260, dropBaseMs * (ROWS - row + 2)) + 'ms');
+    discLayer.appendChild(disc);
+
+    // set size and start above board
+    disc.style.setProperty('--disc', discSize + 'px');
+    positionDisc(disc, col, row, false);
+
+    // initial drop start from top of board
+    disc.style.transform = `translateY(${-cell}px)`;
+    disc.offsetHeight; // reflow
+    // drop to target
+    const finalY = row*cell + (cell - discSize)/2;
+    disc.style.transform = `translateY(${finalY}px)`;
+
+    // after drop small bounce
+    disc.addEventListener('transitionend', () => {
+      // bounce only once, then finalize
+      disc.style.transition = 'transform 90ms ease-out';
+      const bounceY = Math.max(0, finalY - Math.min(10, cell*0.18));
+      disc.style.transform = `translateY(${bounceY}px)`;
+      setTimeout(() => {
+        disc.style.transition = 'transform 110ms ease-in';
+        disc.style.transform = `translateY(${finalY}px)`;
+        setTimeout(() => finalizeMove(col, row, disc), 110);
+      }, 90);
+    }, {once:true});
+  }
+
+  function finalizeMove(col, row, disc){
+    grid[row][col] = current;
+
+    const win = checkWin(col, row, current);
+    const draw = !win && grid.every(r => r.every(v => v !== 0));
+
+    if(win){
+      gameOver = true; busy = false;
+      highlight(win);
+      setBanner((current===1? 'Red' : 'Blue') + ' wins');
+      return;
+    }
+    if(draw){
+      gameOver = true; busy = false;
+      setBanner('Draw');
+      return;
+    }
+
+    current = current === 1 ? 2 : 1;
+    setTurnUI();
+    busy = false;
+  }
+
+  function highlight(cells){
+    const key = new Set(cells.map(([r,c]) => r+','+c));
+    [...discLayer.children].forEach(el => {
+      if(!el.classList.contains('disc') || el.classList.contains('ghost')) return;
+      const r = +el.dataset.r, c = +el.dataset.c;
+      if(key.has(r+','+c)) el.classList.add('win');
+    });
+  }
+
+  function inBounds(r,c){ return r>=0 && r<ROWS && c>=0 && c<COLS; }
+
+  function lineFrom(r,c,dr,dc,player){
+    const cells = [];
+    while(inBounds(r,c) && grid[r][c] === player){ cells.push([r,c]); r+=dr; c+=dc; }
+    return cells;
+  }
+
+  function checkWin(col, row, player){
+    // check 4 directions and combine both sides
+    const dirs = [ [0,1], [1,0], [1,1], [1,-1] ];
+    for(const [dr,dc] of dirs){
+      const a = lineFrom(row, col, dr, dc, player);
+      const b = lineFrom(row-dr, col-dc, -dr, -dc, player); // extend opposite including current
+      const seq = [...b.reverse(), ...a];
+      if(seq.length >= 4){
+        // return first four that include the placed one with preference to longest contiguous run
+        return seq.slice(0,4);
+      }
+    }
+    return null;
+  }
+
+  // pointer interactions
+  boardWrap.addEventListener('click', e => {
+    const c = colFromEvent(e);
+    handleTap(c);
+  });
+
+  restartBtn.addEventListener('click', () => { init(); });
+
+  window.addEventListener('resize', sizeBoard);
+
+  // start
+  init();
+})();
+</script>
+</body>
+</html>
